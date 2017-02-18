@@ -61,15 +61,23 @@ firebase = pyrebase.initialize_app(config)
 #           "userID": "123", 
 #           "name", "Will Smith",
 #           "url", "http://google.com"
-#           "color", "black",
-#           "incident_location", 94706,
+#           "color", "0x3a346e",
+#           "incidentLocation", 94706,
 #           "petType", "dog",
 #           "breed", "pug",
-#           "status", {
-#                       "found", false,
-#                       "zip", 0,
-#                       "caregiver", ""
-#                     } 
+#           "found", true, 
+#           "status", [{
+#                       "caregiverZip", 0,
+#                       "caregiverID", ""
+#                       "caregiverName", ""
+#                       "time", 12389934852312
+#                      }, 
+#                      {
+#                       "caregiverZip", 92831,
+#                       "caregiverID", "12345"
+#                       "caregiverName", "PetsRUs"
+#                       "time", time.now
+#                      }] 
 #       }
 #
 #
@@ -91,17 +99,12 @@ def def post_lost_pet():
     data = request.data
     if type(data) == str:
         data = json.loads(data)
-    target_id = data['id']
-    new_metadata = base64.b64encode(data['metadata'])
-    if new_metadata:
-        status, body = send_custom_query(ACCESS_KEY, SECRET_KEY, target_id, new_metadata)
-        return body, status
-    else:
-        return 'No new metadata passed', 400
 
-if __name__ == "__main__":
-    app.run(debug=True)
-
+    # if new_metadata:
+    #     status, body = send_custom_query(ACCESS_KEY, SECRET_KEY, target_id, new_metadata)
+    #     return body, status
+    # else:
+    #     return 'No new metadata passed', 400
 
 
 @app.route("/found", methods=['POST'])
@@ -116,10 +119,6 @@ def def post_found_pet():
         return body, status
     else:
         return 'No new metadata passed', 400
-
-if __name__ == "__main__":
-    app.run(debug=True)
-
 
 
 @app.route("/")
