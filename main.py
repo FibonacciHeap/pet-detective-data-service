@@ -39,14 +39,14 @@ def getRecognitionData(url, data, senderType):
     key = client.key('userID', data['userID'])
     report = datastore.Entity(key)
 
-    date = formatdate(None, localtime=False, usegmt=True)
-    endpoint = "https://cv-dot-pet-detective-159121.appspot.com"
-    path = "/recognize/?url=" + url
     content_type_bare = 'application/json'
+    date = formatdate(None, localtime=False, usegmt=True)
+    endpointCV = "https://cv-dot-pet-detective-159121.appspot.com"
+    pathCV = "/recognize/?url=" + url
 
     # Sign the request and get the Authorization header
     auth_header = authorization_header_for_request(access_key, secret_key,
-        http_method, request_body, content_type_bare, date, path)
+        http_method, request_body, content_type_bare, date, pathCV)
     request_headers = {
         'Accept': 'application/json',
         'Authorization': auth_header,
@@ -54,9 +54,9 @@ def getRecognitionData(url, data, senderType):
         'Date': date
     }
 
-    # Make the request over HTTPS on port 443
-    http = httplib.HTTPSConnection(endpoint, 443)
-    http.request(http_method, path, request_body, request_headers)
+    # Make the request over HTTPS on port 443 to CV API
+    http = httplib.HTTPSConnection(endpointCV, 443)
+    http.request(http_method, pathCV, request_body, request_headers)
     response = http.getresponse()
     response_body = response.read()
 
@@ -73,6 +73,20 @@ def getRecognitionData(url, data, senderType):
     report["userID"] = "456"
     time.sleep(5)
     client.put(report)
+
+    # Make the request over HTTPS on port 443 to MS API
+    date = formatdate(None, localtime=False, usegmt=True)
+    endpointMS = "https://endpointnotdefined.com" #https://match-dot-pet-detective-159121.appspot.com/
+    pathMS = "/recognize/?url=" + url
+
+    # Sign the request and get the Authorization header
+    auth_header = authorization_header_for_request(access_key, secret_key,
+        http_method, request_body, content_type_bare, date, pathMS)
+
+    http = httplib.HTTPSConnection(endpointMS, 443)
+    http.request(http_method, pathMS, request_body, request_headers)
+    response = http.getresponse()
+    response_body = response.read()
 
     return {}, response.status
 
