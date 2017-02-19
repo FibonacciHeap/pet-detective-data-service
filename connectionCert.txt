@@ -1,0 +1,55 @@
+connectionName: pet-detective-159121:us-central1:db
+etag: '"BAg4XvF9oO4T-BUHYn9IlSYpXHc/MQ"'
+instance: db
+instanceType: CLOUDSQL_INSTANCE
+ipAddresses:
+- ipAddress: 104.154.174.147
+kind: sql#instance
+project: pet-detective-159121
+region: us-central1
+serverCaCert:
+  cert: |-
+    -----BEGIN CERTIFICATE-----
+    MIIDITCCAgmgAwIBAgIBADANBgkqhkiG9w0BAQUFADBIMSMwIQYDVQQDExpHb29n
+    bGUgQ2xvdWQgU1FMIFNlcnZlciBDQTEUMBIGA1UEChMLR29vZ2xlLCBJbmMxCzAJ
+    BgNVBAYTAlVTMB4XDTE3MDIxODIzMTIwNVoXDTE5MDIxODIzMTMwNVowSDEjMCEG
+    A1UEAxMaR29vZ2xlIENsb3VkIFNRTCBTZXJ2ZXIgQ0ExFDASBgNVBAoTC0dvb2ds
+    ZSwgSW5jMQswCQYDVQQGEwJVUzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC
+    ggEBAIamdPmPGhwGVC8cSziAgz40XotSof0PBc/D8yQYoTnO138xhite/RaQCbhX
+    gEWEJqowlxyCjdxdrGF2Ja1HQwQmv4KmUVtHoaMKsppet9hO3SP6zDm6RQMndQba
+    dmTpYsutj/6rrG6J4UrFcU/1C9YvUvLPphWWvTLIIxpJakf3ANNtu3/OQ9H0PLAk
+    GEiK/WZhYT+HnsAkppNPxjj77z4DWsIw9FI0Q0BBstTDEhm7a46zUmn6VTbHSVzk
+    bfvck3iQg90AMAiJL5a6wKY1F7Aj/cPOXw8XF0LbzS1yjUHOwBBjq0Fe49YBwjVO
+    eXiP8MQOTgfuHVRnKW25z4DdfkUCAwEAAaMWMBQwEgYDVR0TAQH/BAgwBgEB/wIB
+    ADANBgkqhkiG9w0BAQUFAAOCAQEAAAS0sgM4ZAjdOsw1Z0R3KwcjqoHuSfeJlQoJ
+    C6JN2uAZXQ9Up/w25EfPiGSqsKt3ZXqbMBjQBCdbrveADAzGy1gG0LvJ9mT4Af4G
+    3rH887OkJHFILa5I5AtKKTYarqMXd2bAqsJMPHJ0cYtU1SsUfOVXxy9GvhYYGy+J
+    cIhpypNDvJUcbsfFTYBp48p0y+4OQAejLAgNqJ4mOxZ/CV7G3wiEtzKXM+6gglVA
+    REyDcSxrWz0JbJqROId4PZoQryArDPX3c3CN5B5E0bRLpGcYU9pDgnGBT4jKYBtZ
+    9U2kq8BwUvYyo8tNj8zgRhfnkadCn3gLpEZIhr2ymoVS46gaew==
+    -----END CERTIFICATE-----
+  certSerialNumber: '0'
+  commonName: C=US,O=Google\, Inc,CN=Google Cloud SQL Server CA
+  createTime: '2017-02-18T23:12:05.959000+00:00'
+  expirationTime: '2019-02-18T23:13:05.959000+00:00'
+  instance: db
+  kind: sql#sslCert
+  sha1Fingerprint: 408c7118fbb511939c9d406572054f2c4ee0782a
+serviceAccountEmailAddress: lxootochljd7nl5kyvca46drsu@speckle-umbrella-4.iam.gserviceaccount.com
+settings:
+  activationPolicy: ALWAYS
+  backupConfiguration:
+  - binaryLogEnabled: true
+    enabled: true
+    id: 64f13933-2d0a-4c3e-87b0-192b40d2f8bf
+    kind: sql#backupConfiguration
+    startTime: 07:00
+  ipConfiguration:
+    enabled: true
+    kind: sql#ipConfiguration
+  kind: sql#settings
+  pricingPlan: PER_USE
+  replicationType: SYNCHRONOUS
+  settingsVersion: '1'
+  tier: db-n1-standard-1
+state: RUNNABLE

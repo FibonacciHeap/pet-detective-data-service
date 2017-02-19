@@ -6,21 +6,28 @@ import base64
 from email.utils import formatdate
 import sys
 import os
-import pyrebase
 
 import json
 from flask import Flask, request, jsonify
 app = Flask(__name__)
 
-config = {
-    apiKey: "AIzaSyD-1U7VybKprHDVFLyuMEPVytBBLLDrmgE",
-    authDomain: "petbot-af71f.firebaseapp.com",
-    databaseURL: "https://petbot-af71f.firebaseio.com",
-    storageBucket: "petbot-af71f.appspot.com"#,
-    #messagingSenderId: "961663994191"
-};
+# Environment variables are defined in app.yaml.
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['SQLALCHEMY_DATABASE_URI']
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-firebase = pyrebase.initialize_app(config)
+db = SQLAlchemy(app)
+
+
+class Report(db.Model):
+    userId = db.Column(db.String(46), primary_key=True)
+    reportTime = db.Column(db.DateTime())
+    name = db.Column(db.String(46))
+    reportType = db.Column(db.String)
+
+
+    def __init__(self, timestamp, user_ip):
+        self.timestamp = timestamp
+        self.user_ip = user_ip
 
 
 # def send_custom_query(access_key, secret_key, target_id, new_metadata):
@@ -58,14 +65,18 @@ firebase = pyrebase.initialize_app(config)
 #   Verb: POST
 #   Request Body Example:
 #       {
-#           "userID": "123", 
+#           "userID": "123",
+#			"reportTime", time.now, 
 #           "name", "Will Smith",
+#           "reportType", "samaratin",
+#           "reportLocation", [123.3234,23.6543]
 #           "url", "http://google.com"
-#           "color", "0x3a346e",
+#           "color", "#3a346e",
 #           "incidentLocation", 94706,
 #           "petType", "dog",
 #           "breed", "pug",
 #           "found", true, 
+#           "rejections", [122,653],
 #           "status", [{
 #                       "caregiverZip", 0,
 #                       "caregiverID", ""
@@ -95,20 +106,23 @@ firebase = pyrebase.initialize_app(config)
 
 
 @app.route("/lost", methods=['POST'])
-def def post_lost_pet():
+def post_lost_pet():
     data = request.data
     if type(data) == str:
         data = json.loads(data)
+    image_url = data["url"]
+
+
 
     # if new_metadata:
     #     status, body = send_custom_query(ACCESS_KEY, SECRET_KEY, target_id, new_metadata)
     #     return body, status
     # else:
-    #     return 'No new metadata passed', 400
+#     #     return 'No new metadata passed', 400
 
 
 @app.route("/found", methods=['POST'])
-def def post_found_pet():
+def post_found_pet():
     data = request.data
     if type(data) == str:
         data = json.loads(data)

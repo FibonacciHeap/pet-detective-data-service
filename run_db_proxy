@@ -1,0 +1,1 @@
+./cloud_sql_proxy -instances=pet-detective-159121:us-central1:db=tcp:3306
