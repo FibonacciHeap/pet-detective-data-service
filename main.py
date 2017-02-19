@@ -9,6 +9,7 @@ import sys
 import os
 import json
 import threading
+from math import sqrt
 from multiprocessing.dummy import Pool
 from google.cloud import datastore
 from flask import Flask, request, jsonify, current_app, redirect
@@ -22,21 +23,50 @@ def get_client():
 
 
 # analytics query servicing
-@app.route("/analytics", methods=['GET'])
-def getAnalytics():
-    key = client.key('Task')
-    report = datastore.Entity(key)
+def postAnalytics(recordType, newPost):
+    http_method = 'POST'
+    endpoint = "https://pd-match.herokuapp.com/match/check"
+    content_type_bare = 'application/json'
+    date = formatdate(None, localtime=False, usegmt=True)
+    pathCV = "/recognize/?url=" + url
 
+    # Sign the request and get the Authorization header
+    auth_header = authorization_header_for_request(access_key, secret_key,
+        http_method, request_body, content_type_bare, date, pathCV)
+    request_headers = {
+        'Accept': 'application/json',
+        'Authorization': auth_header,
+        'Content-Type': content_type_bare,
+        'Date': date
+    }
+
+    postType = newPost["reportType"]
+
+    query = client.query(kind=recordType)
+    query.add_filter('reportType', '!=', query)
+
+    records = list(query.fetch(limit=1000))
+
+    relevantRecords = []
+
+    def euclidean_distance(x1,x2,y1,y2):
+        return sqrt((x1-x2)**2 + (y1-y2)**2)
+
+    for r in records:
+        if euclidean_distance(newPost["reportLat"], r["reportLat"], newPost["reportLon"], r["reportLon"]) < 30:
+            relevantRecords.add(r)
+
+    queryResults = {"pet": newPost, "otherPets": relevantRecords}
+    http.request(http_method, endpoint, queryResults, request_headers)
 
 
 # consuming the CV API
 def getRecognitionData(url, data, senderType):
-    # ############# TESTING ONLY #############
-    # return {"petType": "dog"}, 200
- #    ########################################
+    #return jsonify({"petType": "dog", "color": "#ffffff"}) # COMMENT ME OUT!!!
+
     http_method = 'GET'
     client = get_client()
-    key = client.key('userID', data['userID'])
+    key = client.key(data['reportType'], data['userID'])
     report = datastore.Entity(key)
 
     content_type_bare = 'application/json'
@@ -61,7 +91,6 @@ def getRecognitionData(url, data, senderType):
     response_body = response.read()
 
     statusUpdate = [] # {"caregiverLocation": 0, "caregiverID": "", "caregiverName": "", "time": datetime.datetime.utcnow()}
-    data["reportID"] = key
     data["status"] = statusUpdate # add initial status
     data["reportType"] = senderType # owner or samaratin
     data["found"] = False
@@ -74,21 +103,9 @@ def getRecognitionData(url, data, senderType):
     time.sleep(5)
     client.put(report)
 
-    # Make the request over HTTPS on port 443 to MS API
-    date = formatdate(None, localtime=False, usegmt=True)
-    endpointMS = "https://endpointnotdefined.com" #https://match-dot-pet-detective-159121.appspot.com/
-    pathMS = "/recognize/?url=" + url
-
-    # Sign the request and get the Authorization header
-    auth_header = authorization_header_for_request(access_key, secret_key,
-        http_method, request_body, content_type_bare, date, pathMS)
-
-    http = httplib.HTTPSConnection(endpointMS, 443)
-    http.request(http_method, pathMS, request_body, request_headers)
-    response = http.getresponse()
-    response_body = response.read()
-
-    return {}, response.status
+    postAnalytics(record["recordType"], report)
+    print("Returned from analytics query.")
+    return jsonify({})
 
 def recognitionDataCallback():
     print("Returned from asynch function")
@@ -98,58 +115,43 @@ def recognitionDataCallback():
 @app.route("/lost", methods=['POST'])
 def post_lost_pet():
 
-    # data = {
-    #     "reportID": 12345,
-    #     "reportLocation": [123.3234,23.6543],
-    #     "reportType": "samaratin",
-    #     "userID": "123",
-    #     "reportTime": time.time(), 
-    #     "userName": "Will Smith",
-    #     "reportType": "samaratin",
-    #     "reportLocation": [123.3234,23.6543],
-    #     "url": "http://google.com",
-    #     "incidentLocation": 94706
-    # }
-
     data = request.data # get the header body
+    if (type(data) == bytes):
+        data = json.loads(data.decode("utf-8"))
 
-    if type(data) == str:
-        data = json.loads(data)[0] # convert to dictionary
+    print(data)
+    print(type(data))
+
+    #if type(data) == str:
+    #    data = json.loads(user_data) # convert to dictionary
     url = data["url"]
 
     newCallbackFunction = lambda new_name: recognitionDataCallback(url, data, "owner")
     pool.apply_async(getRecognitionData, args=[url,data], callback=newCallbackFunction)
-    # return {}, 200
-    return redirect('/')
+    return jsonify({})
 
 
 # push to the database for found pets
 @app.route("/found", methods=['POST'])
 def post_found_pet():
-    
-    # data = {
-    #     "reportID": 12345,
-    #     "reportLocation": [123.3234,23.6543],
-    #     "reportType": "samaratin",
-    #     "userID": "123",
-    #     "reportTime": time.time(), 
-    #     "userName": "Will Smith",
-    #     "reportType": "samaratin",
-    #     "reportLocation": [123.3234,23.6543],
-    #     "url": "http://google.com",
-    #     "incidentLocation": 94706
-    # }
 
     data = request.data # get the header body
+    if (type(data) == bytes):
+        data = json.loads(data.decode("utf-8"))
 
-    if type(data) == str:
-        data = json.loads(data)[0] # convert to dictionary
+    print(data)
+    print(type(data))
+
+    #if type(data) == str:
+    #    data = json.loads(user_data) # convert to dictionary
     url = data["url"]
 
     newCallbackFunction = lambda new_name: recognitionDataCallback(url, data, "samaratin")
     pool.apply_async(recognitionDataCallback, args=[url,data], callback=newCallbackFunction)
-    # return {}, 200
-    return redirect('/')
+
+
+
+    return jsonify({})
 
 
 @app.route("/")
@@ -158,8 +160,20 @@ def index():
     return "Index page"
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
 
+
+
+# data = {
+    #     "reportLat": 123.3234,
+    #     "reportLon": 23.6543,
+    #     "reportType": "samaratin",
+    #     "userID": "123",
+    #     "reportTime": time.time(), 
+    #     "userName": "Will Smith",
+    #     "url": "http://google.com",
+    #     "incidentLocation": 94706
+    # }
 
 
  
@@ -190,7 +204,6 @@ if __name__ == "__main__":
 #   Verb: POST
 #   Request Body Example:
 #       {
-#           "reportID", 12345,
 #           "reportLocation", [123.3234,23.6543],
 #           "reportType", "samaratin",
 #           "userID": "123",
