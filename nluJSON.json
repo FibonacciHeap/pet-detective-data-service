@@ -1,0 +1,12 @@
+{
+	"reportID", 12345,
+	"reportLocation", [123.3234, 23.6543],
+	"reportType", "samaratin",
+	"userID": "123",
+	"reportTime", time.now, 
+	"userName", "Will Smith",
+	"reportType", "samaratin",
+	"reportLocation", [123.3234,23.6543]
+	"url", "http://google.com"
+	"incidentLocation", 94706
+}

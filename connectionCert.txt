@@ -53,3 +53,11 @@ settings:
   settingsVersion: '1'
   tier: db-n1-standard-1
 state: RUNNABLE
+
+
+
+
+
+
+
+Datastore authorization key: AIzaSyDvqsM1HNViM6Ek_3bNBcR93KngNBF5ZxU

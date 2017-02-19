@@ -1,4 +1,4 @@
-# import httplib
+import httplib
 import hashlib
 import mimetypes
 import hmac
@@ -6,58 +6,156 @@ import base64
 from email.utils import formatdate
 import sys
 import os
-
 import json
-from flask import Flask, request, jsonify
+import threading
+
+from google.cloud import datastore
+from flask import Flask, request, jsonify, current_app
 app = Flask(__name__)
 
-# Environment variables are defined in app.yaml.
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['SQLALCHEMY_DATABASE_URI']
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db = SQLAlchemy(app)
 
 
-class Report(db.Model):
-    userId = db.Column(db.String(46), primary_key=True)
-    reportTime = db.Column(db.DateTime())
-    name = db.Column(db.String(46))
-    reportType = db.Column(db.String)
+def get_client():
+    return datastore.Client(current_app.config['PROJECT_ID'])
 
 
-    def __init__(self, timestamp, user_ip):
-        self.timestamp = timestamp
-        self.user_ip = user_ip
+# [START from_datastore]
+def from_datastore(entity):
+    """Translates Datastore results into the format expected by the
+    application.
+
+    Datastore typically returns:
+        [Entity{key: (kind, id), prop: val, ...}]
+
+    This returns:
+        {id: id, prop: val, ...}
+    """
+    if not entity:
+        return None
+    if isinstance(entity, builtin_list):
+        entity = entity.pop()
+
+    entity['id'] = entity.key.id
+    return entity
+# [END from_datastore]
 
 
-# def send_custom_query(access_key, secret_key, target_id, new_metadata):
-#     http_method = 'PUT'
-#     date = formatdate(None, localtime=False, usegmt=True)
 
-#     endpoint = "vws.vuforia.com"
-#     path = "/targets/" + target_id
+# analytics query servicing
+@app.route("/analytics", methods=['GET'])
+def post_found_pet():
+    key = client.key('Task')
+    report = datastore.Entity(key)
 
-#     request_body = '{"application_metadata" : "' + new_metadata + '"}'
-#     content_type_bare = 'application/json'
 
-#     # Sign the request and get the Authorization header
-#     auth_header = authorization_header_for_request(access_key, secret_key, http_method, request_body, content_type_bare,
-#                                                    date, path)
 
-#     request_headers = {
-#         'Accept': 'application/json',
-#         'Authorization': auth_header,
-#         'Content-Type': content_type_bare,
-#         'Date': date
-#     }
+# consuming the CV API
+def getRecognitionData(url):
+	############# TESTING ONLY #############
+	return 200, jsonify({"petType", "dog"}) 
+    ########################################
 
-#     # Make the request over HTTPS on port 443
-#     http = httplib.HTTPSConnection(endpoint, 443)
-#     http.request(http_method, path, request_body, request_headers)
+    # http_method = 'GET'
+    # date = formatdate(None, localtime=False, usegmt=True)
 
-#     response = http.getresponse()
-#     response_body = response.read()
-#     return response.status, response_body
+    # endpoint = "ENDPOINT_NOT_DEFINED"
+    # path = "/recognize/?url=" + url
+    # content_type_bare = 'application/json'
+
+    # # Sign the request and get the Authorization header
+    # # auth_header = authorization_header_for_request(access_key, secret_key, http_method, request_body, content_type_bare,
+    #                                                # date, path)
+    # request_headers = {
+    #     'Accept': 'application/json',
+    #     'Authorization': auth_header,
+    #     'Content-Type': content_type_bare,
+    #     'Date': date
+    # }
+
+    # # Make the request over HTTPS on port 443
+    # http = httplib.HTTPSConnection(endpoint, 443)
+    # http.request(http_method, path, request_body, request_headers)
+
+    # response = http.getresponse()
+    # response_body = response.read()
+    # return response.status, response_body
+
+
+# push to the database for lost pets
+@app.route("/lost", methods=['POST'])
+def post_lost_pet():
+	key = client.key('Task')
+    report = datastore.Entity(key)
+
+	data = request.data # get the header body
+    if type(data) == str:
+        data = json.loads(data)[0] # convert to dictionary
+    url = data["url"]
+    status, classification = getRecognitionData(url)
+
+    if (status != 200) {
+    	print("Error: ", status)
+    	return status
+    }
+
+    statusUpdate = [] # {"caregiverLocation": 0, "caregiverID": "", "caregiverName": "", "time": datetime.datetime.utcnow()}
+    data["status"] = statusUpdate # add initial status
+    data["reportType"] = "owner"
+    data["found"] = false
+    data["rejections"] = []
+
+    data["petType"] = classification["petType"]
+    data["color"] = classification["color"]
+	report.update(data)
+	thr = threading.Thread(target=client.put, args=(report), kwargs={})
+    thr.start()
+
+    # Acknowledge that data is being posted
+    return jsonify({}), 200
+
+
+# push to the database for found pets
+@app.route("/found", methods=['POST'])
+def post_found_pet():
+    key = client.key('Task')
+    report = datastore.Entity(key)
+
+	data = request.data # get the header body
+    if type(data) == str:
+        data = json.loads(data)[0] # convert to dictionary
+
+    url = data["url"]
+    status, classification = getRecognitionData(url)
+
+    if (status != 200) {
+    	print("Error: ", status)
+    	return status
+    }
+
+    statusUpdate = [{"caregiverLocation": 0, "caregiverID": "", "caregiverName": "", "time": datetime.datetime.utcnow()}]
+    data["status"] = statusUpdate # add initial status
+    data["reportType"] = "owner"
+    data["found"] = false
+    data["rejections"] = []
+
+    data["petType"] = classification["petType"]
+    data["color"] = classification["color"]
+
+	report.update(data)
+	thr = threading.Thread(target=client.put, args=(report), kwargs={})
+    thr.start()
+
+    # Acknowledge that data is being posted
+    return jsonify({}), 200
+
+
+@app.route("/")
+@app.route("/index")
+def index():
+    return "Index page"
+
+if __name__ == "__main__":
+    app.run(debug=True)
 
 
 #  Request Format
@@ -65,16 +163,18 @@ class Report(db.Model):
 #   Verb: POST
 #   Request Body Example:
 #       {
+#			"reportID", 12345,
+#			"reportLocation", [123.3234,23.6543],
+#			"reportType", "samaratin",
 #           "userID": "123",
 #			"reportTime", time.now, 
-#           "name", "Will Smith",
+#           "userName", "Will Smith",
 #           "reportType", "samaratin",
 #           "reportLocation", [123.3234,23.6543]
 #           "url", "http://google.com"
 #           "color", "#3a346e",
 #           "incidentLocation", 94706,
 #           "petType", "dog",
-#           "breed", "pug",
 #           "found", true, 
 #           "rejections", [122,653],
 #           "status", [{
@@ -101,47 +201,4 @@ class Report(db.Model):
 #   Failure Response Example:
 #       Code: 400
 #       Response Body: " <some string explaining error> "
-
-
-
-
-@app.route("/lost", methods=['POST'])
-def post_lost_pet():
-    data = request.data
-    if type(data) == str:
-        data = json.loads(data)
-    image_url = data["url"]
-
-
-
-    # if new_metadata:
-    #     status, body = send_custom_query(ACCESS_KEY, SECRET_KEY, target_id, new_metadata)
-    #     return body, status
-    # else:
-#     #     return 'No new metadata passed', 400
-
-
-@app.route("/found", methods=['POST'])
-def post_found_pet():
-    data = request.data
-    if type(data) == str:
-        data = json.loads(data)
-    target_id = data['id']
-    new_metadata = base64.b64encode(data['metadata'])
-    if new_metadata:
-        status, body = send_custom_query(ACCESS_KEY, SECRET_KEY, target_id, new_metadata)
-        return body, status
-    else:
-        return 'No new metadata passed', 400
-
-
-@app.route("/")
-@app.route("/index")
-def index():
-    return "Index page"
-
-if __name__ == "__main__":
-    app.run(debug=True)
-
-
 
