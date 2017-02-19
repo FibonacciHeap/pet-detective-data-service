@@ -4,3 +4,12 @@ entrypoint: gunicorn -b :$PORT main:app
 
 runtime_config:
   python_version: 3
+
+env_variables:
+    # Replace user, password, database, and instance connection name with the values obtained
+    # when configuring your Cloud SQL instance.
+    SQLALCHEMY_DATABASE_URI: >-
+      mysql+pymysql://master:fibonacciheap@/db?unix_socket=/cloudsql/pet-detective-159121:us-central1:db
+
+beta_settings:
+    cloud_sql_instances: pet-detective-159121:us-central1:db
